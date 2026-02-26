@@ -26,6 +26,15 @@
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
 
+    // 🔊 Browser voice function (Added by me)
+    function speakOut(textToSay) {
+        const utterance = new SpeechSynthesisUtterance(textToSay);
+        // Awaaz thodi natural karne ke liye settings
+        utterance.rate = 1; 
+        utterance.pitch = 1;
+        window.speechSynthesis.speak(utterance);
+    }
+
     async function startMS() {
         const circle = document.getElementById("circle");
         const text = document.getElementById("text");
@@ -45,18 +54,27 @@
             status.innerText = "THINKING...";
 
             try {
-                // ✅ Connection URL and Body matching Backend
-                const res = await fetch("http://127.0.0.1:5000/chat", {
+                // ⚠️ IMPORTANT: Jab Render deploy ho jaye, toh niche wala URL change kar dena
+                // Example: "https://ms-ai-backend.onrender.com/chat"
+                const backendURL = "https://YOUR-RENDER-APP-URL.onrender.com/chat"; 
+
+                const res = await fetch(backendURL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ message: userText }) 
                 });
 
                 const data = await res.json();
-                text.innerText = "MS: " + (data.reply || "No reply");
+                const aiReply = data.reply || "No reply";
+                
+                text.innerText = "MS: " + aiReply;
                 status.innerText = "DONE";
 
+                // 🔊 AI ka reply browser se sunayein
+                speakOut(aiReply);
+
             } catch (err) {
+                console.error(err);
                 text.innerText = "Error: Backend Offline";
                 status.innerText = "ERROR";
             } finally {
