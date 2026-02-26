@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MS AI ASSISTANT</title>
+    <style>
+        body { margin:0; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; background:#010108; color:white; font-family:'Segoe UI', sans-serif; }
+        #circle { width:280px; height:280px; border-radius:50%; border:4px solid #0008ff; box-shadow:0 0 40px #0008ff; display:flex; flex-direction:column; justify-content:center; align-items:center; cursor:pointer; transition:0.3s; }
+        #circle.listening { border-color:#00ff88; box-shadow:0 0 50px #00ff88; transform: scale(1.05); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { box-shadow:0 0 40px #00ff88;} 50% { box-shadow:0 0 60px #00ff88;} 100% { box-shadow:0 0 40px #00ff88;} }
+        h2 { margin-bottom:5px; letter-spacing:2px; }
+        #text { color:#aaa; font-size:14px; text-align:center; padding:0 20px; }
+        #status { margin-top:10px; color:#00ff88; font-weight:bold; }
+    </style>
+</head>
+<body>
+
+<div id="circle" onclick="startMS()">
+    <h2>MS AI</h2>
+    <p id="text">Tap to Speak</p>
+    <small id="status">Ready</small>
+</div>
+
+<script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+
+    async function startMS() {
+        const circle = document.getElementById("circle");
+        const text = document.getElementById("text");
+        const status = document.getElementById("status");
+
+        if (circle.classList.contains("listening")) return;
+
+        circle.classList.add("listening");
+        text.innerText = "Listening...";
+        status.innerText = "SPEAK NOW";
+
+        recognition.start();
+
+        recognition.onresult = async (event) => {
+            const userText = event.results[0][0].transcript;
+            text.innerText = "You: " + userText;
+            status.innerText = "THINKING...";
+
+            try {
+                // ✅ Connection URL and Body matching Backend
+                const res = await fetch("http://127.0.0.1:5000/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: userText }) 
+                });
+
+                const data = await res.json();
+                text.innerText = "MS: " + (data.reply || "No reply");
+                status.innerText = "DONE";
+
+            } catch (err) {
+                text.innerText = "Error: Backend Offline";
+                status.innerText = "ERROR";
+            } finally {
+                circle.classList.remove("listening");
+            }
+        };
+
+        recognition.onerror = () => {
+            circle.classList.remove("listening");
+            status.innerText = "TRY AGAIN";
+        };
+    }
+</script>
+</body>
+</html>
